@@ -4,7 +4,7 @@ I'll create a comprehensive installation script that handles all the issues we e
 
 ```bash
 # Download the script
-curl -O https://raw.githubusercontent.com/[save-this-script-somewhere]/install_sd_webui.sh
+curl -O [https://raw.githubusercontent.com/[save-this-script-somewhere]/install_sd_webui.sh](https://raw.githubusercontent.com/levent1ozgur/bookmarks/refs/heads/main/Stable%20Diffusion%20WebUI%20Auto-Installer%20for%20Arch%20Linux/install_sd_webui.sh)
 
 # Or create it manually:
 nano install_sd_webui.sh
