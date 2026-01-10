@@ -125,11 +125,38 @@ git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git "$INSTALL_
 
 cd "$INSTALL_DIR"
 
-# Step 3: Configure environment to use working repositories
-print_info "Step 3: Configuring environment variables..."
+# Step 3: Detect GPU VRAM and configure optimization
+print_info "Step 3: Detecting GPU VRAM..."
+
+VRAM_MB=0
+VRAM_ARGS=""
+
+if command -v nvidia-smi &> /dev/null; then
+    # Get VRAM in MB
+    VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 | awk '{print int($1)}')
+    print_info "Detected VRAM: ${VRAM_MB}MB"
+    
+    # Determine optimization flags based on VRAM
+    if [ "$VRAM_MB" -lt 4096 ]; then
+        VRAM_ARGS="--lowvram --opt-split-attention"
+        print_warning "Low VRAM detected (<4GB). Using --lowvram mode."
+    elif [ "$VRAM_MB" -lt 8192 ]; then
+        VRAM_ARGS="--medvram --opt-split-attention"
+        print_info "Medium VRAM detected (4-8GB). Using --medvram mode."
+    else
+        VRAM_ARGS="--xformers"
+        print_info "High VRAM detected (≥8GB). Using standard mode with xformers."
+    fi
+else
+    print_warning "nvidia-smi not found. Cannot detect VRAM. Using default settings."
+    print_warning "You can manually edit webui-user.sh later to add optimization flags."
+fi
+
+# Step 4: Configure environment to use working repositories
+print_info "Step 4: Configuring environment variables..."
 
 # Create/update webui-user.sh with proper configuration
-cat > webui-user.sh << 'EOF'
+cat > webui-user.sh << EOF
 #!/bin/bash
 #########################################################
 # Stable Diffusion WebUI User Configuration
@@ -143,17 +170,25 @@ export STABLE_DIFFUSION_XL_REPO="https://github.com/Stability-AI/generative-mode
 # Use Python 3.10
 export python_cmd="python3.10"
 
-# Uncomment to add custom arguments (e.g., --medvram for low VRAM)
-#export COMMANDLINE_ARGS="--medvram"
+# Auto-configured based on detected VRAM
+export COMMANDLINE_ARGS="$VRAM_ARGS"
+
+# You can manually adjust the arguments here if needed:
+# For GPUs with <4GB VRAM: --lowvram --opt-split-attention
+# For GPUs with 4-8GB VRAM: --medvram --opt-split-attention
+# For GPUs with ≥8GB VRAM: --xformers (or leave empty)
 
 EOF
 
 chmod +x webui-user.sh
 
 print_info "Environment configuration complete!"
+if [ -n "$VRAM_ARGS" ]; then
+    print_info "VRAM optimization flags: $VRAM_ARGS"
+fi
 
-# Step 4: Create a clean Git configuration to avoid authentication issues
-print_info "Step 4: Configuring Git..."
+# Step 5: Create a clean Git configuration to avoid authentication issues
+print_info "Step 5: Configuring Git..."
 
 # Create a minimal gitconfig in the installation directory
 cat > .gitconfig << 'EOF'
@@ -167,8 +202,8 @@ export GIT_CONFIG_GLOBAL="$INSTALL_DIR/.gitconfig"
 
 print_info "Git configuration complete!"
 
-# Step 5: Pre-clone the problematic repositories
-print_info "Step 5: Pre-cloning required repositories..."
+# Step 6: Pre-clone the problematic repositories
+print_info "Step 6: Pre-cloning required repositories..."
 
 mkdir -p repositories
 
@@ -190,8 +225,8 @@ cd ..
 
 print_info "Repository cloning complete!"
 
-# Step 6: Create launch script
-print_info "Step 6: Creating launch script..."
+# Step 7: Create launch script
+print_info "Step 7: Creating launch script..."
 
 cat > launch.sh << 'EOF'
 #!/bin/bash
@@ -212,13 +247,21 @@ chmod +x launch.sh
 
 print_info "Launch script created!"
 
-# Step 7: Summary and instructions
+# Step 8: Summary and instructions
 echo ""
 print_info "==================================================================="
 print_info "Installation Complete!"
 print_info "==================================================================="
 echo ""
 print_info "Installation directory: $INSTALL_DIR"
+if [ "$VRAM_MB" -gt 0 ]; then
+    echo ""
+    print_info "GPU Configuration:"
+    print_info "  Detected VRAM: ${VRAM_MB}MB"
+    if [ -n "$VRAM_ARGS" ]; then
+        print_info "  Optimization flags: $VRAM_ARGS"
+    fi
+fi
 echo ""
 print_info "To start Stable Diffusion WebUI:"
 print_info "  cd $INSTALL_DIR"
@@ -229,12 +272,19 @@ print_info "  ./webui.sh"
 echo ""
 print_info "The WebUI will be available at: http://127.0.0.1:7860"
 echo ""
-print_info "For low VRAM GPUs (6GB or less), edit webui-user.sh and uncomment:"
-print_info "  export COMMANDLINE_ARGS=\"--medvram\""
+if [ "$VRAM_MB" -gt 0 ] && [ "$VRAM_MB" -lt 8192 ]; then
+    print_warning "Note: Your GPU has ${VRAM_MB}MB VRAM. Optimization flags have been"
+    print_warning "automatically configured in webui-user.sh. You can adjust them manually if needed."
+    echo ""
+fi
+print_info "To modify VRAM optimization settings, edit: $INSTALL_DIR/webui-user.sh"
 echo ""
 print_info "Your system specs:"
 print_info "  GPU: $(lspci | grep -i vga | cut -d: -f3)"
 print_info "  RAM: $(free -h | awk '/^Mem:/ {print $2}')"
+if [ "$VRAM_MB" -gt 0 ]; then
+    print_info "  VRAM: ${VRAM_MB}MB"
+fi
 echo ""
 read -p "Do you want to start Stable Diffusion WebUI now? (y/n) " -n 1 -r
 echo
