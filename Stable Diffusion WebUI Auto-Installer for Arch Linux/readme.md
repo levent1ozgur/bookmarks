@@ -2,25 +2,31 @@ I'll create a comprehensive installation script that handles all the issues we e
 
 **To install Stable Diffusion WebUI:**
 
-```bash
+
 # Download the script
+```bash
 curl -O https://raw.githubusercontent.com/levent1ozgur/bookmarks/refs/heads/main/Stable%20Diffusion%20WebUI%20Auto-Installer%20for%20Arch%20Linux/install_sd_webui.sh
 ```
-```bash
+
 # Or create it manually:
-nano install_sd_webui.sh
-# Paste the script content, save with Ctrl+X, Y, Enter
-```
 ```bash
+nano install_sd_webui.sh
+```
+# Paste the script content, save with Ctrl+X, Y, Enter
+
+
 # Make it executable
+```bash
 chmod +x install_sd_webui.sh
 ```
-```bash
+
 # Run the installer (default location: ~/stable-diffusion-webui)
+```bash
 ./install_sd_webui.sh
 ```
-```bash
+
 # Or specify a custom installation directory:
+```bash
 ./install_sd_webui.sh /path/to/custom/directory
 ```
 
