@@ -136,7 +136,8 @@ cat > webui-user.sh << 'EOF'
 #########################################################
 
 # Use working fork for Stability-AI repositories
-export STABLE_DIFFUSION_REPO="https://github.com/w-e-w/stablediffusion.git"
+# Using personal fork to ensure availability
+export STABLE_DIFFUSION_REPO="https://github.com/levent1ozgur/stablediffusion.git"
 export STABLE_DIFFUSION_XL_REPO="https://github.com/Stability-AI/generative-models.git"
 
 # Use Python 3.10
@@ -175,8 +176,8 @@ cd repositories
 
 # Clone stable-diffusion using the working fork
 if [ ! -d "stable-diffusion-stability-ai" ]; then
-    print_info "Cloning stable-diffusion (using w-e-w fork)..."
-    git clone https://github.com/w-e-w/stablediffusion.git stable-diffusion-stability-ai
+    print_info "Cloning stable-diffusion (using levent1ozgur fork)..."
+    git clone https://github.com/levent1ozgur/stablediffusion.git stable-diffusion-stability-ai
 fi
 
 # Clone generative-models
@@ -199,7 +200,8 @@ cat > launch.sh << 'EOF'
 cd "$(dirname "$0")"
 
 # Export the working repository URLs
-export STABLE_DIFFUSION_REPO="https://github.com/w-e-w/stablediffusion.git"
+# Using personal fork to ensure availability
+export STABLE_DIFFUSION_REPO="https://github.com/levent1ozgur/stablediffusion.git"
 export STABLE_DIFFUSION_XL_REPO="https://github.com/Stability-AI/generative-models.git"
 
 # Launch the WebUI
