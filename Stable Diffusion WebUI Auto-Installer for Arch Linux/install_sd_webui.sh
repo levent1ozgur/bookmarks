@@ -136,13 +136,27 @@ if command -v nvidia-smi &> /dev/null; then
     VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 | awk '{print int($1)}')
     print_info "Detected VRAM: ${VRAM_MB}MB"
     
+    # Check GPU model for GTX 16xx series (known precision issues)
+    GPU_MODEL=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1)
+    NEEDS_PRECISION_FIX=false
+    
+    if echo "$GPU_MODEL" | grep -qi "GTX 16"; then
+        NEEDS_PRECISION_FIX=true
+        print_warning "GTX 16xx series detected. Adding precision fix flags."
+    fi
+    
     # Determine optimization flags based on VRAM
     if [ "$VRAM_MB" -lt 4096 ]; then
-        VRAM_ARGS="--lowvram --opt-split-attention"
-        print_warning "Low VRAM detected (<4GB). Using --lowvram mode."
+        VRAM_ARGS="--lowvram --opt-split-attention --no-half --no-half-vae"
+        print_warning "Low VRAM detected (<4GB). Using --lowvram mode with precision fixes."
     elif [ "$VRAM_MB" -lt 8192 ]; then
-        VRAM_ARGS="--medvram --opt-split-attention"
-        print_info "Medium VRAM detected (4-8GB). Using --medvram mode."
+        if [ "$NEEDS_PRECISION_FIX" = true ]; then
+            VRAM_ARGS="--medvram --opt-split-attention --no-half --no-half-vae"
+            print_info "Medium VRAM detected (4-8GB). Using --medvram mode with precision fixes for GTX 16xx."
+        else
+            VRAM_ARGS="--medvram --opt-split-attention"
+            print_info "Medium VRAM detected (4-8GB). Using --medvram mode."
+        fi
     else
         VRAM_ARGS="--xformers"
         print_info "High VRAM detected (≥8GB). Using standard mode with xformers."
@@ -174,8 +188,9 @@ export python_cmd="python3.10"
 export COMMANDLINE_ARGS="$VRAM_ARGS"
 
 # You can manually adjust the arguments here if needed:
-# For GPUs with <4GB VRAM: --lowvram --opt-split-attention
+# For GPUs with <4GB VRAM: --lowvram --opt-split-attention --no-half --no-half-vae
 # For GPUs with 4-8GB VRAM: --medvram --opt-split-attention
+# For GTX 16xx series: Add --no-half --no-half-vae to prevent NaN errors
 # For GPUs with ≥8GB VRAM: --xformers (or leave empty)
 
 EOF
